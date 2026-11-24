@@ -261,7 +261,7 @@
     let tAnt = performance.now();
     (function bucle(t) {
       const dt = (t - tAnt) / 1000; tAnt = t;
-      if (girando) { girar(EJE_Y, dt * 1.0); aplicar(); }
+      if (girando) { girar(EJE_Y, -dt * 1.0); aplicar(); }   // sentido del giro automático
       requestAnimationFrame(bucle);
     })(tAnt);
   </script>
