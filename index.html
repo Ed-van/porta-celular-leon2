@@ -15,7 +15,10 @@
     #aviso span { display: block; font-size: 44px; margin-bottom: 8px; }
     #ayuda { position: fixed; top: 52px; opacity: 0; left: 50%; transform: translateX(-50%); z-index: 10; padding: 6px 12px; border-radius: 999px; background: rgba(20,20,30,.55); color: #fff; font-size: 12px; white-space: nowrap; transition: opacity .6s; }
     #ui { position: fixed; left: 0; right: 0; bottom: 20px; z-index: 10;
-          display: flex; justify-content: center; gap: 10px; }
+          display: flex; flex-direction: column; align-items: center; gap: 10px; }
+    .fila { display: flex; gap: 10px; }
+    #ui button.eje { border: 2px solid var(--c); min-width: 70px; }
+    #ui button.eje.activo { background: var(--c); }
     #ui button { border: none; border-radius: 999px; padding: 12px 18px; font-size: 16px;
                  font-weight: 600; color: #fff; background: rgba(20,20,30,.75); }
     #estado { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); z-index: 10;
@@ -26,12 +29,18 @@
 <body>
   <div id="aviso"><div><span>📷</span>Apunta la cámara a la imagen del producto</div></div>
   <div id="estado">Buscando la imagen del producto…</div>
-  <div id="ayuda">☝️ 1 dedo: girar · ✌️ 2 dedos: zoom y torcer</div>
+  <div id="ayuda">☝️ 1 dedo: girar · ✌️ 2 dedos: zoom · X Y Z: giro automático</div>
   <div id="ui">
-    <button id="btnMenos">−</button>
-    <button id="btnRotar">Girar solo</button>
-    <button id="btnReset">Reiniciar</button>
-    <button id="btnMas">+</button>
+    <div class="fila">
+      <button class="eje" data-eje="x" style="--c:#E74C3C">⟳ X</button>
+      <button class="eje" data-eje="y" style="--c:#27AE60">⟳ Y</button>
+      <button class="eje" data-eje="z" style="--c:#2E86DE">⟳ Z</button>
+    </div>
+    <div class="fila">
+      <button id="btnMenos">−</button>
+      <button id="btnReset">Reiniciar</button>
+      <button id="btnMas">+</button>
+    </div>
   </div>
 
   <script>
@@ -182,7 +191,8 @@
 
     // ====== Estado de la vista ======
     const rot = new THREE.Quaternion();          // rotación libre acumulada
-    let escala = 1, girando = false;
+    let escala = 1;
+    const girando = { x: false, y: false, z: false };
     const EJE_X = new THREE.Vector3(1, 0, 0), EJE_Y = new THREE.Vector3(0, 1, 0), EJE_Z = new THREE.Vector3(0, 0, 1);
     const tmp = new THREE.Quaternion();
 
@@ -251,15 +261,29 @@
     // ====== Botones ======
     document.getElementById('btnMas').onclick   = () => { escala = Math.min(escala * 1.2, 5); aplicar(); };
     document.getElementById('btnMenos').onclick = () => { escala = Math.max(escala / 1.2, 0.2); aplicar(); };
-    document.getElementById('btnReset').onclick = () => { rot.identity(); escala = 1; aplicar(); };
-    const btnRotar = document.getElementById('btnRotar');
-    btnRotar.onclick = () => { girando = !girando; btnRotar.textContent = girando ? 'Detener' : 'Girar solo'; };
+    document.getElementById('btnReset').onclick = () => {
+      rot.identity(); escala = 1; aplicar();
+      Object.keys(girando).forEach(k => girando[k] = false);
+      document.querySelectorAll('button.eje').forEach(b => b.classList.remove('activo'));
+    };
+    // Botones de giro por eje: cada toque prende / apaga ese eje
+    document.querySelectorAll('button.eje').forEach(b => {
+      b.onclick = () => {
+        const e = b.dataset.eje;
+        girando[e] = !girando[e];
+        b.classList.toggle('activo', girando[e]);
+      };
+    });
 
     // Giro automático suave
     let tAnt = performance.now();
     (function bucle(t) {
       const dt = (t - tAnt) / 1000; tAnt = t;
-      if (girando) { girar(EJE_Y, dt * 1.0); aplicar(); }   // sentido del giro automático
+      const VEL = 1.0;   // velocidad (radianes por segundo); cambia el signo para invertir
+      if (girando.x) girar(EJE_X,  dt * VEL);   // voltea hacia adelante
+      if (girando.y) girar(EJE_Y,  dt * VEL);   // vitrina: el frente va a la derecha
+      if (girando.z) girar(EJE_Z, -dt * VEL);   // como volante, en sentido del reloj
+      if (girando.x || girando.y || girando.z) aplicar();
       requestAnimationFrame(bucle);
     })(tAnt);
   </script>
