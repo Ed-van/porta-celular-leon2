@@ -157,11 +157,9 @@
 
     <!-- La imagen del producto es el marcador -->
     <a-entity id="marcador" mindar-image-target="targetIndex: 0">
-      <!-- Parado sobre la imagen (si la imagen está en una mesa) -->
-      <a-entity rotation="90 0 0">
-        <a-entity id="modelo" position="0 0.55 0.1">
-          <a-entity portacelular></a-entity>
-        </a-entity>
+      <!-- Parado de frente, mirando a la cámara -->
+      <a-entity id="modelo" position="0 0 0.15">
+        <a-entity portacelular></a-entity>
       </a-entity>
     </a-entity>
   </a-scene>
@@ -261,7 +259,7 @@
     let tAnt = performance.now();
     (function bucle(t) {
       const dt = (t - tAnt) / 1000; tAnt = t;
-      if (girando) { girar(EJE_Y, -dt * 1.0); aplicar(); }   // sentido del giro automático
+      if (girando) { girar(EJE_Y, dt * 1.0); aplicar(); }   // sentido del giro automático
       requestAnimationFrame(bucle);
     })(tAnt);
   </script>
